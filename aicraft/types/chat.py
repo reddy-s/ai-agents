@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from enum import Enum
 from .analysers import HobuCustomerConversationPreference
+import math
 
 
 class Roles(Enum):
@@ -87,6 +88,15 @@ class Element(BaseModel):
     contentType: ContentType
     model: str
 
+    def __init__(self, content: str, content_type: ContentType, model: str):
+        super().__init__(content=self.add_completion_if_missing(content), contentType=content_type, model=model)
+
+    @staticmethod
+    def add_completion_if_missing(content: str):
+        if not content.endswith(('.', '?', '!')):
+            content += '.'
+        return content
+
     class Config:
         arbitrary_types_allowed = True
 
@@ -142,6 +152,7 @@ class Conversation(BaseModel):
     """
 
     messages: list[UserMessage | AssistantMessage] = []
+    prompt_pairs: int = 0
 
     def get_messages_for_prompt(self, last_n=5) -> list[dict[str, str]]:
         messages = []
@@ -161,6 +172,7 @@ class Conversation(BaseModel):
 
     def add_message(self, message: UserMessage | AssistantMessage):
         self.messages.append(message)
+        self.prompt_pairs = math.ceil(len(self.messages) / 2)
 
     class Config:
         arbitrary_types_allowed = True

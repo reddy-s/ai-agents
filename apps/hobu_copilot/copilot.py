@@ -1,7 +1,10 @@
+import logging
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
+from concurrent.futures import ThreadPoolExecutor
+import numpy as np
 import os
-from typing import Union
+from typing import Union, Optional
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from aicraft.types import (
@@ -15,8 +18,10 @@ from aicraft.types import (
 )
 from agents import Planner, ConversationAnalyser
 from render import Renderer
+import time
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
 
 class Copilot:
@@ -26,6 +31,8 @@ class Copilot:
         self.conversation_analyst = ConversationAnalyser(
             os.environ.get("HOBU_COPILOT_PROMPT_TEMPLATES")
         )
+        self.executor = ThreadPoolExecutor(max_workers=10)
+        self.conversation_pairs = 0
 
     def generate(self, messages: list[dict], state: dict, dialogue: DeltaGenerator) -> list[Element]:
         elements = []
@@ -47,23 +54,29 @@ class Copilot:
     def get_prompt_messages(last_n=5) -> list[dict[str, str]]:
         return st.session_state.user.conversation.get_messages_for_prompt(last_n=last_n)
 
-    def update_preferences(self, prompt_messages: list[dict], state: dict) -> bool:
+    @staticmethod
+    def enable_preference_interpreter() -> bool:
+        return st.session_state.user.conversation.prompt_pairs > 1
+
+    def update_preferences(self, prompt_messages: list[dict], state: dict) -> tuple[float, Optional[HobuCustomerConversationPreference]]:
         try:
+            start_time = time.time()
+            logger.info("Interpreting user preferences ...")
             response = self.conversation_analyst.analyse(prompt_messages, state)
             preferences = HobuCustomerConversationPreference(**response.content.dict())
-            st.session_state.user.preferences = preferences
-            return True
+            elapsed_time = round(time.time() - start_time, 1)
+            return elapsed_time, preferences
         except TypeError:
-            return False
+            return 0.0, None
         except ValidationError:
-            return False
+            return 0.0, None
 
     def process_prompt(self, query: str):
         _user_message = UserMessage(
             role=Roles.user.value,
             elements=[
                 Element(
-                    contentType=ContentType.TEXT, content=query, model=Roles.user.value
+                    content_type=ContentType.TEXT, content=query, model=Roles.user.value
                 )
             ],
         )
@@ -74,7 +87,6 @@ class Copilot:
         dialogue = st.chat_message(
             name=Roles.assistant.value, avatar=Renderer.agent_icon
         )
-        self.update_preferences(prompt_messages, self.get_unknown_preferences())
 
         _assistant_message = AssistantMessage(
             role=Roles.assistant.value,
@@ -85,7 +97,19 @@ class Copilot:
             ),
         )
 
-        dialogue.json(st.session_state.user.preferences.dict(), expanded=False)
+        with dialogue.container():
+            dialogue.bar_chart(np.random.randn(50, 3))
+
+        if self.enable_preference_interpreter():
+            with dialogue.status("Trying to understanding your preferences ..."):
+                future = self.executor.submit(self.update_preferences, prompt_messages, self.get_unknown_preferences())
+                elapsed_time, preferences = future.result()
+                if preferences is not None:
+                    st.session_state.user.preferences = preferences
+                    dialogue.json(st.session_state.user.preferences.dict(), expanded=False)
+                    dialogue.markdown(f"*Elapsed time*: `{elapsed_time}s`")
+                else:
+                    dialogue.error("Failed to understand your preferences. Will try again in the next attempt")
 
         self.add_message_to_state(_assistant_message)
 
@@ -93,7 +117,6 @@ class Copilot:
         self.process_prompt(query)
 
     def run(self):
-
         st.logo(f"{os.environ.get('HOBU_COPILOT_ASSETS')}/images/static/logo.png")
 
         if "user" not in st.session_state:

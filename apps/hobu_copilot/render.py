@@ -18,6 +18,7 @@ load_dotenv()
 class Renderer:
     user_icon = f"{os.environ.get('HOBU_COPILOT_ASSETS')}/images/static/family.png"
     agent_icon = f"{os.environ.get('HOBU_COPILOT_ASSETS')}/images/static/ai-c.png"
+    sentiment_mapping = [":material/thumb_down:", ":material/thumb_up:"]
 
     @staticmethod
     def render_chat_history():
@@ -46,4 +47,4 @@ class Renderer:
     @staticmethod
     def render_stream_in_dialogue(streaming_iter: Iterator[str], model: str, dialogue: DeltaGenerator) -> Element:
         response = dialogue.write_stream(streaming_iter)
-        return Element(contentType=ContentType.MARKDOWN, content=response, model=model)
+        return Element(content_type=ContentType.MARKDOWN, content=response, model=model)
