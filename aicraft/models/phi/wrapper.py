@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class Phi(CPPInferenceAbstract):
+    _instance = None
+
     def __init__(
         self,
         identifier: str = "bartowski/phi3-4x4b-v1-GGUF",
@@ -24,3 +26,12 @@ class Phi(CPPInferenceAbstract):
                 n_ctx=context_length,
             )
         )
+
+    @classmethod
+    def get_or_create_instance(cls):
+        if cls._instance is None:
+            logger.info("Creating new instance of DeepSeek")
+            cls._instance = Phi()
+        else:
+            logger.info("Returning existing instance of DeepSeek")
+        return cls._instance

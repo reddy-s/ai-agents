@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class DeepSeek(CPPInferenceAbstract):
+    _instance = None
+
     def __init__(
         self,
         identifier: str = "bartowski/DeepSeek-Coder-V2-Lite-Instruct-GGUF",
@@ -19,8 +21,17 @@ class DeepSeek(CPPInferenceAbstract):
             InferenceConfig(
                 identifier=identifier,
                 file_suffix=file_suffix,
-                verbose=verbose,
                 n_gpu_layers=n_gpu_layers,
+                verbose=verbose,
                 n_ctx=context_length,
             )
         )
+
+    @classmethod
+    def get_or_create_instance(cls):
+        if cls._instance is None:
+            logger.info("Creating new instance of DeepSeek")
+            cls._instance = DeepSeek()
+        else:
+            logger.info("Returning existing instance of DeepSeek")
+        return cls._instance

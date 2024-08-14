@@ -61,6 +61,12 @@ class ContentType(Enum):
     MARKDOWN = "text/markdown"
     JSON = "text/json"
     SQL = "text/sql"
+    BAR = "viz/bar"
+    LINE = "viz/line"
+    AREA = "viz/area"
+    PIE = "viz/pie"
+    MAP = "viz/map"
+    TABLE = "viz/table"
 
 
 class Element(BaseModel):
@@ -89,12 +95,16 @@ class Element(BaseModel):
     model: str
 
     def __init__(self, content: str, content_type: ContentType, model: str):
-        super().__init__(content=self.add_completion_if_missing(content), contentType=content_type, model=model)
+        super().__init__(
+            content=self.add_completion_if_missing(content),
+            contentType=content_type,
+            model=model,
+        )
 
     @staticmethod
     def add_completion_if_missing(content: str):
-        if not content.endswith(('.', '?', '!')):
-            content += '.'
+        if not content.endswith((".", "?", "!")):
+            content += "."
         return content
 
     class Config:

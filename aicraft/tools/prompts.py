@@ -26,9 +26,13 @@ class PromptConstructor:
         self.preference_analysis_template = self.env.get_template(
             "preference-analysis.tmpl"
         )
+        self.web_scraper_template = self.env.get_template("web-scraper.tmpl")
 
     def get_estate_agent_service_desk_prompt(self, data: dict) -> str:
         return self.estate_agent_service_desk_template.render(data)
 
     def get_preference_analysis_prompt(self, data: dict) -> str:
         return self.preference_analysis_template.render(data)
+
+    def get_web_scraper_prompt(self, data: dict) -> str:
+        return self.web_scraper_template.render(data)

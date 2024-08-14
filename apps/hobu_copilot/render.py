@@ -42,9 +42,11 @@ class Renderer:
             if e.contentType == ContentType.JSON:
                 dialog.json(e.content)
             if e.contentType == ContentType.SQL:
-                dialog.markdown(f"```sql\n{e.content}```")
+                dialog.code(e.content)
 
     @staticmethod
-    def render_stream_in_dialogue(streaming_iter: Iterator[str], model: str, dialogue: DeltaGenerator) -> Element:
+    def render_stream_in_dialogue(
+        streaming_iter: Iterator[str], model: str, dialogue: DeltaGenerator
+    ) -> Element:
         response = dialogue.write_stream(streaming_iter)
         return Element(content_type=ContentType.MARKDOWN, content=response, model=model)

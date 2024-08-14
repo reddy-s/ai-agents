@@ -16,6 +16,7 @@ from .analysers import (
     HobuCustomerConversationPreference,
 )
 from .prompt import PromptType
+from .scrapers import CodingAgentResponse, StateStatsScraperCodeExecutionResponse
 
 
 __all__ = [
@@ -35,4 +36,6 @@ __all__ = [
     "PropertyType",
     "HobuCustomerConversationPreference",
     "PromptType",
+    "CodingAgentResponse",
+    "StateStatsScraperCodeExecutionResponse",
 ]

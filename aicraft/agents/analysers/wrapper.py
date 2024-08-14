@@ -6,7 +6,7 @@ from ...types import PromptType
 class PreferenceAnalysingAgent(AbstractAgent):
     def __init__(self, template_folder: str):
         super().__init__(
-            DeepSeek(),
+            DeepSeek.get_or_create_instance(),
             {
                 "role": "system",
                 "content": "",

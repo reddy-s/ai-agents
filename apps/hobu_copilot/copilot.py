@@ -14,14 +14,18 @@ from aicraft.types import (
     AssistantMessage,
     Element,
     ContentType,
-    HobuCustomerConversationPreference
+    HobuCustomerConversationPreference,
 )
-from agents import Planner, ConversationAnalyser
+from agents import Planner, ConversationAnalyser, WebScraper
 from render import Renderer
 import time
+from executor import Executor
+
 
 load_dotenv()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Copilot:
@@ -31,13 +35,19 @@ class Copilot:
         self.conversation_analyst = ConversationAnalyser(
             os.environ.get("HOBU_COPILOT_PROMPT_TEMPLATES")
         )
+        self.web_scraper = WebScraper(os.environ.get("HOBU_COPILOT_PROMPT_TEMPLATES"))
         self.executor = ThreadPoolExecutor(max_workers=10)
+        self.code_executor = Executor()
         self.conversation_pairs = 0
 
-    def generate(self, messages: list[dict], state: dict, dialogue: DeltaGenerator) -> list[Element]:
+    def generate(
+        self, messages: list[dict], state: dict, dialogue: DeltaGenerator
+    ) -> list[Element]:
         elements = []
         e = Renderer.render_stream_in_dialogue(
-            self.planner.planner_iter(messages, state), self.planner.identifier, dialogue
+            self.planner.planner_iter(messages, state),
+            self.planner.identifier,
+            dialogue,
         )
         elements.append(e)
         return elements
@@ -58,7 +68,9 @@ class Copilot:
     def enable_preference_interpreter() -> bool:
         return st.session_state.user.conversation.prompt_pairs > 1
 
-    def update_preferences(self, prompt_messages: list[dict], state: dict) -> tuple[float, Optional[HobuCustomerConversationPreference]]:
+    def update_preferences(
+        self, prompt_messages: list[dict], state: dict
+    ) -> tuple[float, Optional[HobuCustomerConversationPreference]]:
         try:
             start_time = time.time()
             logger.info("Interpreting user preferences ...")
@@ -72,6 +84,7 @@ class Copilot:
             return 0.0, None
 
     def process_prompt(self, query: str):
+        # Register user prompt
         _user_message = UserMessage(
             role=Roles.user.value,
             elements=[
@@ -83,35 +96,60 @@ class Copilot:
         self.add_message_to_state(_user_message)
         Renderer.render_message(_user_message)
 
+        # Preparing conversation for analysis
         prompt_messages = self.get_prompt_messages(last_n=self.context_history)
         dialogue = st.chat_message(
             name=Roles.assistant.value, avatar=Renderer.agent_icon
         )
 
-        _assistant_message = AssistantMessage(
-            role=Roles.assistant.value,
-            elements=self.generate(
-                prompt_messages,
-                self.get_unknown_preferences(),
-                dialogue
-            ),
-        )
+        # Understand and respond back to the prompt
+        try:
+            _assistant_message = AssistantMessage(
+                role=Roles.assistant.value,
+                elements=self.generate(
+                    prompt_messages, self.get_unknown_preferences(), dialogue
+                ),
+            )
 
-        with dialogue.container():
             dialogue.bar_chart(np.random.randn(50, 3))
+            # TODO: Add more elements to the message
+            self.add_message_to_state(_assistant_message)
+        except Exception as e:
+            logger.error(e)
+            st.button(
+                "↻ Try again", on_click=self.handler, type="secondary", args=(query,)
+            )
 
+        # Analyse user preferences
         if self.enable_preference_interpreter():
-            with dialogue.status("Trying to understanding your preferences ..."):
-                future = self.executor.submit(self.update_preferences, prompt_messages, self.get_unknown_preferences())
-                elapsed_time, preferences = future.result()
-                if preferences is not None:
-                    st.session_state.user.preferences = preferences
-                    dialogue.json(st.session_state.user.preferences.dict(), expanded=False)
-                    dialogue.markdown(f"*Elapsed time*: `{elapsed_time}s`")
-                else:
-                    dialogue.error("Failed to understand your preferences. Will try again in the next attempt")
+            dialogue.toast("Trying to understanding your preferences ...")
+            future = self.executor.submit(
+                self.update_preferences, prompt_messages, self.get_unknown_preferences()
+            )
+            elapsed_time, preferences = future.result()
+            if preferences is not None:
+                st.session_state.user.preferences = preferences
+                dialogue.toast("Preferences updated!")
+                dialogue.json(st.session_state.user.preferences.dict(), expanded=False)
+                dialogue.markdown(f"*Elapsed time*: `{elapsed_time}s`")
+            else:
+                dialogue.error(
+                    "Failed to understand your preferences. Will try again in the next attempt"
+                )
 
-        self.add_message_to_state(_assistant_message)
+    def scrape_state_stats(self, dialogue: DeltaGenerator):
+        # TODO: Used for test only and needs to be cleaned up
+        _url = "https://www.zillow.com/home-values/40/nj/"
+        dialogue.toast(f"Scraping insights from {_url} ...")
+        future = self.executor.submit(self.code_executor.scrape_the_web_page, _url, 3)
+        elapsed_time, file_location, conv = future.result()
+        dialogue.markdown(
+            f"""
+            *Elapsed time*: `{elapsed_time}`\n
+            *File location*: [{file_location}]({file_location})
+        """
+        )
+        dialogue.json(conv, expanded=False)
 
     def handler(self, query: str):
         self.process_prompt(query)
@@ -122,10 +160,8 @@ class Copilot:
         if "user" not in st.session_state:
             st.session_state.user = UserState()
 
-        if "user" in st.session_state:
-            Renderer.render_chat_history()
+        Renderer.render_chat_history()
 
         query = st.chat_input("Ask away ...")
-
         if query:
             self.handler(query)

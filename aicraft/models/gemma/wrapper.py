@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class Gemma(CPPInferenceAbstract):
+    _instance = None
+
     def __init__(
         self,
         identifier: str = "bartowski/gemma-2-2b-it-abliterated-GGUF",
@@ -24,3 +26,12 @@ class Gemma(CPPInferenceAbstract):
                 n_ctx=context_length,
             )
         )
+
+    @classmethod
+    def get_or_create_instance(cls):
+        if cls._instance is None:
+            logger.info("Creating new instance of DeepSeek")
+            cls._instance = Gemma()
+        else:
+            logger.info("Returning existing instance of DeepSeek")
+        return cls._instance

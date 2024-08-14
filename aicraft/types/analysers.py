@@ -81,5 +81,26 @@ class HobuCustomerConversationPreference(BaseModel):
             "known": known_fields,
         }
 
+    def analyse_education_preferences(self) -> bool:
+        if len(self.desired_school_districts) > 0:
+            return True
+        return False
+
+    def analyse_location_preferences(self) -> bool:
+        if (
+            len(self.counties_interested_in) > 0
+            or len(self.townships_interested_in) > 0
+        ):
+            return True
+        return False
+
+    def analyse_property_preferences(self) -> bool:
+        if (
+            len(self.interested_in_property_types) > 0
+            and len(self.townships_interested_in) > 0
+        ):
+            return True
+        return False
+
     class Config:
         arbitrary_types_allowed = True
