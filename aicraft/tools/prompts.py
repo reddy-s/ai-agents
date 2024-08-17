@@ -1,7 +1,5 @@
 from jinja2 import Environment, FileSystemLoader
 import logging
-import os
-from enum import Enum
 from dotenv import load_dotenv
 
 logger = logging.getLogger(__name__)
@@ -27,6 +25,8 @@ class PromptConstructor:
             "preference-analysis.tmpl"
         )
         self.web_scraper_template = self.env.get_template("web-scraper.tmpl")
+        self.data_analyst_template = self.env.get_template("data-analyst.tmpl")
+        self.action_caller_template = self.env.get_template("action-caller.tmpl")
 
     def get_estate_agent_service_desk_prompt(self, data: dict) -> str:
         return self.estate_agent_service_desk_template.render(data)
@@ -36,3 +36,9 @@ class PromptConstructor:
 
     def get_web_scraper_prompt(self, data: dict) -> str:
         return self.web_scraper_template.render(data)
+
+    def get_data_analyst_prompt(self, data: dict) -> str:
+        return self.data_analyst_template.render(data)
+
+    def get_action_caller_prompt(self, data: dict) -> str:
+        return self.action_caller_template.render(data)

@@ -5,7 +5,14 @@ from llama_cpp import Llama, ChatCompletionRequestResponseFormat
 from typing import Any
 from typing import Iterator
 
-from ..types import InferenceRequest, InferenceResponse, InferenceConfig
+from ..types import (
+    InferenceRequest,
+    InferenceResponse,
+    InferenceConfig,
+    FunctionCallRequest,
+    FunctionCallResponse,
+    FunctionCall,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +67,31 @@ class CPPInferenceAbstract:
             content = chunk["choices"][0]["delta"].get("content", None)
             if content:
                 yield content
+
+    def action(self, request: FunctionCallRequest) -> FunctionCallResponse:
+        response = self.model.create_chat_completion(
+            messages=request.messages,
+            tools=request.tools,
+            tool_choice=request.tool_choice,
+        )
+
+        calls = []
+        if "tool_calls" not in response["choices"][0]["message"]:
+            return FunctionCallResponse(
+                role=response["choices"][0]["message"]["role"], calls=calls
+            )
+
+        for call in response["choices"][0]["message"]["tool_calls"]:
+            calls.append(
+                FunctionCall(
+                    name=call["function"]["name"],
+                    arguments=json.loads(call["function"]["arguments"]),
+                )
+            )
+
+        return FunctionCallResponse(
+            role=response["choices"][0]["message"]["role"], calls=calls
+        )
 
     def __call__(self, request: InferenceRequest) -> InferenceResponse:
         return self.generate(request)

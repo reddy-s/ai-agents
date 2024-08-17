@@ -1,7 +1,13 @@
 from typing import Iterator
 
 from ..models.abstract import CPPInferenceAbstract
-from ..types import InferenceResponse, InferenceRequest, PromptType
+from ..types import (
+    InferenceResponse,
+    InferenceRequest,
+    PromptType,
+    FunctionCallRequest,
+    FunctionCallResponse,
+)
 from ..tools.prompts import PromptConstructor
 
 
@@ -34,3 +40,8 @@ class AbstractAgent:
         self._update_prompt_with_state(state)
         context.messages.insert(0, self.instruction)
         return self.model.stream(context)
+
+    def action(self, context: FunctionCallRequest, state: dict) -> FunctionCallResponse:
+        self._update_prompt_with_state(state)
+        context.messages.insert(0, self.instruction)
+        return self.model.action(context)

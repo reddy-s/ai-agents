@@ -3,15 +3,19 @@ from typing import Iterator
 from aicraft.agents import (
     EstateAgent,
     PreferenceAnalysingAgent,
-    WebScrapingAgent,
+    DataAnalystAgent,
+    ActionCallingAgent,
 )
 from aicraft.types import (
     InferenceRequest,
     InferenceResponse,
     ChatGenerationResponse,
     HobuCustomerConversationPreference,
-    CodingAgentResponse,
+    DataAnalystResponse,
+    FunctionCallRequest,
+    FunctionCallResponse,
 )
+from tools import HobuTools
 
 
 class Planner:
@@ -40,13 +44,27 @@ class ConversationAnalyser:
         )
 
 
-class WebScraper:
+class DataAnalyst:
     def __init__(self, template_folder: str):
-        self.agent = WebScrapingAgent(template_folder)
+        self.agent = DataAnalystAgent(template_folder)
         self.identifier = self.agent.identifier
 
     def analyse(self, messages: list[dict], state: dict = {}) -> InferenceResponse:
         return self.agent(
-            InferenceRequest(messages=messages, response_format=CodingAgentResponse),
+            InferenceRequest(messages=messages, response_format=DataAnalystResponse),
+            state,
+        )
+
+
+class ActionCaller:
+    def __init__(self, template_folder: str):
+        self.agent = ActionCallingAgent(template_folder)
+        self.identifier = self.agent.identifier
+
+    def call(
+        self, messages: list[dict], tools: list[dict], state: dict = {}
+    ) -> FunctionCallResponse:
+        return self.agent.action(
+            FunctionCallRequest(messages=messages, tools=tools, tool_choice="auto"),
             state,
         )

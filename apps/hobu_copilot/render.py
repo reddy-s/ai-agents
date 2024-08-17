@@ -1,5 +1,7 @@
 import os
 from typing import Iterator, Union
+import logging
+
 import streamlit as st
 from streamlit.delta_generator import DeltaGenerator
 from dotenv import load_dotenv
@@ -10,9 +12,16 @@ from aicraft.types import (
     AssistantMessage,
     Element,
     ContentType,
+    VisualisationType,
+    DataAnalystResponseItem,
+    FunctionCallResponse,
 )
+from tools import HobuTools
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 class Renderer:
@@ -50,3 +59,55 @@ class Renderer:
     ) -> Element:
         response = dialogue.write_stream(streaming_iter)
         return Element(content_type=ContentType.MARKDOWN, content=response, model=model)
+
+    @staticmethod
+    def tool_choices(
+        choices: FunctionCallResponse,
+        tools: HobuTools,
+        dialogue: DeltaGenerator,
+        model: str,
+    ) -> list[Element]:
+        elements = []
+        try:
+            for call in choices.calls:
+                df, desc, viz_type, config = tools.execute_tool(
+                    call.name, **call.arguments
+                )
+                if len(df) > 0:
+                    if desc is not None:
+                        dialogue.markdown(f"## {desc}")
+                    if VisualisationType.LINE == viz_type:
+                        content_type = ContentType.LINE
+                        dialogue.line_chart(df, **config)
+                    elif VisualisationType.AREA == viz_type:
+                        content_type = ContentType.AREA
+                        dialogue.area_chart(df, **config)
+                    elif VisualisationType.SCATTER == viz_type:
+                        content_type = ContentType.SCATTER
+                        dialogue.scatter_chart(df, **config)
+                    elif VisualisationType.BAR == viz_type:
+                        content_type = ContentType.BAR
+                        dialogue.bar_chart(df, **config)
+                    elif VisualisationType.TABLE == viz_type:
+                        content_type = ContentType.TABLE
+                        dialogue.table(df, **config)
+                    else:
+                        content_type = ContentType.TABLE
+                        dialogue.dataframe(df, **config)
+
+                    elements.append(
+                        Element(
+                            content_type=content_type,
+                            content={
+                                "config": config,
+                                "desc": desc,
+                                "func_name": call.name,
+                                "arguments": call.arguments,
+                            },
+                            model=model,
+                        )
+                    )
+            return elements
+        except Exception as e:
+            logger.info(e)
+            return elements

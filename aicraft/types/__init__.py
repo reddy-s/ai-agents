@@ -1,4 +1,11 @@
-from .inference import InferenceRequest, InferenceResponse, InferenceConfig
+from .inference import (
+    InferenceRequest,
+    InferenceResponse,
+    InferenceConfig,
+    FunctionCallRequest,
+    FunctionCallResponse,
+    FunctionCall,
+)
 from .chat import (
     Roles,
     ContentType,
@@ -14,9 +21,15 @@ from .analysers import (
     PropertyFeatures,
     PropertyType,
     HobuCustomerConversationPreference,
+    State,
 )
 from .prompt import PromptType
 from .scrapers import CodingAgentResponse, StateStatsScraperCodeExecutionResponse
+from .data_analyst import (
+    DataAnalystResponse,
+    DataAnalystResponseItem,
+    VisualisationType,
+)
 
 
 __all__ = [
@@ -38,4 +51,11 @@ __all__ = [
     "PromptType",
     "CodingAgentResponse",
     "StateStatsScraperCodeExecutionResponse",
+    "State",
+    "DataAnalystResponse",
+    "DataAnalystResponseItem",
+    "VisualisationType",
+    "FunctionCallRequest",
+    "FunctionCallResponse",
+    "FunctionCall",
 ]

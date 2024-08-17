@@ -38,17 +38,3 @@ If children are mentioned, inquire about schools.
 9. Closing the Conversation:
 Once most of the information has been gathered, gracefully close the conversation.
 "Thank you so much for sharing all this with me. I have a much clearer picture of what you’re looking for. I’ll make sure to find some options that fit your needs perfectly!"
-
-{% if known is defined and known|length > 0 %}
-Known customer preferences:
-{% for k in known %}
-{{ k.label }}={{ k.value }}
-{% endfor %}
-{% endif %}
-
-{% if unknown is defined and unknown|length > 0 %}
-To support the Notetaker, the conversation should flow naturally, capturing details for the following fields:
-{% for u in unknown %}
-{{ u }}
-{% endfor %}
-{% endif %}

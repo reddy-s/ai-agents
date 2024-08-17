@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from enum import Enum
 from .analysers import HobuCustomerConversationPreference
 import math
+from typing import Any
 
 
 class Roles(Enum):
@@ -67,6 +68,7 @@ class ContentType(Enum):
     PIE = "viz/pie"
     MAP = "viz/map"
     TABLE = "viz/table"
+    SCATTER = "viz/scatter"
 
 
 class Element(BaseModel):
@@ -90,11 +92,11 @@ class Element(BaseModel):
         A Pydantic configuration option that allows the use of arbitrary types in the model. This is set to `True` to permit the use of the `ContentType` enum.
     """
 
-    content: str
+    content: Any
     contentType: ContentType
     model: str
 
-    def __init__(self, content: str, content_type: ContentType, model: str):
+    def __init__(self, content: Any, content_type: ContentType, model: str):
         super().__init__(
             content=self.add_completion_if_missing(content),
             contentType=content_type,
@@ -173,8 +175,6 @@ class Conversation(BaseModel):
                 if e.contentType in [
                     ContentType.MARKDOWN,
                     ContentType.TEXT,
-                    ContentType.SQL,
-                    ContentType.JSON,
                 ]:
                     context.append(e.content)
             messages.append({"role": role, "content": "\n".join(context)})

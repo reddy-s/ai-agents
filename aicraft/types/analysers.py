@@ -43,10 +43,65 @@ class PropertyFeatures(Enum):
     OTHER = "other"
 
 
+class State(Enum):
+    UT = "Utah"
+    DE = "Delaware"
+    MO = "Missouri"
+    RI = "Rhode Island"
+    CA = "California"
+    ND = "North Dakota"
+    IN = "Indiana"
+    TN = "Tennessee"
+    KY = "Kentucky"
+    NJ = "New Jersey"
+    NV = "Nevada"
+    HI = "Hawaii"
+    MI = "Michigan"
+    CO = "Colorado"
+    AR = "Arkansas"
+    IL = "Illinois"
+    VA = "Virginia"
+    WY = "Wyoming"
+    NH = "New Hampshire"
+    AL = "Alabama"
+    AZ = "Arizona"
+    ID = "Idaho"
+    KS = "Kansas"
+    TX = "Texas"
+    CT = "Connecticut"
+    MS = "Mississippi"
+    OH = "Ohio"
+    ME = "Maine"
+    WA = "Washington"
+    LA = "Louisiana"
+    WI = "Wisconsin"
+    FL = "Florida"
+    PA = "Pennsylvania"
+    MN = "Minnesota"
+    SC = "South Carolina"
+    SD = "South Dakota"
+    GA = "Georgia"
+    AK = "Alaska"
+    MT = "Montana"
+    NC = "North Carolina"
+    IA = "Iowa"
+    WV = "West Virginia"
+    NE = "Nebraska"
+    OK = "Oklahoma"
+    OR = "Oregon"
+    VT = "Vermont"
+    DC = "District of Columbia"
+    MA = "Massachusetts"
+    MD = "Maryland"
+    NY = "New York"
+    NM = "New Mexico"
+    XX = "Unknown"
+
+
 class HobuCustomerConversationPreference(BaseModel):
-    desired_state_in_us: str = ""
+    desired_state_in_us: list[State] = []
     counties_interested_in: list[str] = []
-    townships_interested_in: list[str] = []
+    metros_interested_in: list[str] = []
     interested_in_property_types: list[PropertyType] = []
     min_price: int = 0
     max_price: int = 0
@@ -87,17 +142,14 @@ class HobuCustomerConversationPreference(BaseModel):
         return False
 
     def analyse_location_preferences(self) -> bool:
-        if (
-            len(self.counties_interested_in) > 0
-            or len(self.townships_interested_in) > 0
-        ):
+        if len(self.counties_interested_in) > 0 or len(self.metros_interested_in) > 0:
             return True
         return False
 
     def analyse_property_preferences(self) -> bool:
         if (
             len(self.interested_in_property_types) > 0
-            and len(self.townships_interested_in) > 0
+            and len(self.metros_interested_in) > 0
         ):
             return True
         return False
