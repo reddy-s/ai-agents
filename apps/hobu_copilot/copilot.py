@@ -166,8 +166,6 @@ class Copilot:
             Constants.hobu_tools_state_dict,
         )
         tools_elapsed_time = round(time.time() - tools_start_time, 1)
-        dialogue.markdown(f"*Action Call Elapsed time*: `{tools_elapsed_time}s`")
-        dialogue.json(tool_choices.dict(), expanded=False)
 
         # Generate assistant response
         _assistant_message = AssistantMessage(
@@ -179,11 +177,13 @@ class Copilot:
 
         # Rendering Insights
         if len(tool_choices.calls) > 0:
+            dialogue.divider()
+            dialogue.markdown(f"*Action Call Elapsed time*: `{tools_elapsed_time}s`")
+            dialogue.json(tool_choices.dict(), expanded=False)
             Renderer.tool_choices(
                 tool_choices, self.tools, dialogue, self.action_caller.identifier
             )
             # _assistant_message.elements.extend(els)
-
         # Analyse user preferences asynchronously
         try:
             if self.enable_preference_interpreter():
@@ -221,7 +221,7 @@ class Copilot:
         self.process_prompt(query)
 
     def run(self):
-        st.logo(f"{os.environ.get('HOBU_COPILOT_ASSETS')}/images/static/logo.png")
+        st.logo(f"{os.environ.get('HOBU_COPILOT_ASSETS')}/images/static/logo-y.png")
 
         if "user" not in st.session_state:
             st.session_state.user = UserState()

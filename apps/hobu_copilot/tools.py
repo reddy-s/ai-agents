@@ -3,7 +3,7 @@ import logging
 from aicraft.tools.executor import SQLExecutor
 from dotenv import load_dotenv
 import pandas as pd
-from aicraft.types import VisualisationType
+from aicraft.types import VisualisationType, ToolExecutionResponse
 from aicraft.tools.tools import ToolHandler
 from typing import Any
 
@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 
 def get_most_preferred_counties_in_a_state_last_month(
     state_id: str, last_yyyymm: int
-) -> tuple[pd.DataFrame, str, VisualisationType, dict[str, Any]]:
+) -> ToolExecutionResponse:
     """
     Helps in getting the most preferred or most popular or hottest counties in a state which can help with understanding
     which counties to live in. It takes the 2 character state_id (eg: NJ, OH) and the last_yyyymm (eg: 202208, 202406)
@@ -32,11 +32,12 @@ def get_most_preferred_counties_in_a_state_last_month(
         ORDER BY hotness_score DESC;
     """
     df = SQLExecutor.execute(query)
-    return (
-        df,
-        f"Hotness Scores per county in {state_id} for {last_yyyymm}",
-        VisualisationType.BAR,
-        {"x": "County", "y": ["Hotness"]},
+    return ToolExecutionResponse(
+        df=df,
+        title=f"##### Hotness Score per county in *:orange[{state_id}]* for *:blue[{last_yyyymm}]*",
+        viz_type=VisualisationType.BAR,
+        viz_config={"x": "County", "y": ["Hotness"]},
+        choices=[],
     )
 
 

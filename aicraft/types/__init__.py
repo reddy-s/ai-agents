@@ -30,6 +30,7 @@ from .data_analyst import (
     DataAnalystResponseItem,
     VisualisationType,
 )
+from .tools import ToolExecutionResponse
 
 
 __all__ = [
@@ -58,4 +59,5 @@ __all__ = [
     "FunctionCallRequest",
     "FunctionCallResponse",
     "FunctionCall",
+    "ToolExecutionResponse",
 ]

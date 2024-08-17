@@ -4,7 +4,7 @@ import inspect
 from typing import get_type_hints, Any
 from dotenv import load_dotenv
 import pandas as pd
-from aicraft.types import VisualisationType
+from aicraft.types import VisualisationType, ToolExecutionResponse
 
 load_dotenv()
 
@@ -74,6 +74,6 @@ class ToolHandler:
 
     def execute_tool(
         self, func_name: str, **kwargs
-    ) -> tuple[pd.DataFrame, str, VisualisationType, dict[str, Any]]:
+    ) -> ToolExecutionResponse:
         func = self.tools[func_name]
         return func(**kwargs)

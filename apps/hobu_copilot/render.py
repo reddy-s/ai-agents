@@ -13,8 +13,8 @@ from aicraft.types import (
     Element,
     ContentType,
     VisualisationType,
-    DataAnalystResponseItem,
     FunctionCallResponse,
+    ToolExecutionResponse
 )
 from tools import HobuTools
 
@@ -61,6 +61,43 @@ class Renderer:
         return Element(content_type=ContentType.MARKDOWN, content=response, model=model)
 
     @staticmethod
+    def render_viz(function_name: str, args: dict, tools: HobuTools, dialogue: DeltaGenerator, model: str) -> Element:
+        response: ToolExecutionResponse = tools.execute_tool(
+            function_name, **args
+        )
+
+        if len(response.df) > 0:
+            if response.title is not None:
+                dialogue.markdown(f"{response.title}")
+            if VisualisationType.LINE == response.viz_type:
+                content_type = ContentType.LINE
+                dialogue.line_chart(response.df, **response.viz_config)
+            elif VisualisationType.AREA == response.viz_type:
+                content_type = ContentType.AREA
+                dialogue.area_chart(response.df, **response.viz_config)
+            elif VisualisationType.SCATTER == response.viz_type:
+                content_type = ContentType.SCATTER
+                dialogue.scatter_chart(response.df, **response.viz_config)
+            elif VisualisationType.BAR == response.viz_type:
+                content_type = ContentType.BAR
+                dialogue.bar_chart(response.df, **response.viz_config)
+            elif VisualisationType.TABLE == response.viz_type:
+                content_type = ContentType.TABLE
+                dialogue.table(response.df, **response.viz_config)
+            else:
+                content_type = ContentType.TABLE
+                dialogue.dataframe(response.df, **response.viz_config)
+
+            return Element(
+                content_type=content_type,
+                content={
+                    "func_name": function_name,
+                    "arguments": args,
+                },
+                model=model,
+            )
+
+    @staticmethod
     def tool_choices(
         choices: FunctionCallResponse,
         tools: HobuTools,
@@ -70,43 +107,10 @@ class Renderer:
         elements = []
         try:
             for call in choices.calls:
-                df, desc, viz_type, config = tools.execute_tool(
-                    call.name, **call.arguments
+                e = Renderer.render_viz(
+                    call.name, call.arguments, tools, dialogue, model
                 )
-                if len(df) > 0:
-                    if desc is not None:
-                        dialogue.markdown(f"## {desc}")
-                    if VisualisationType.LINE == viz_type:
-                        content_type = ContentType.LINE
-                        dialogue.line_chart(df, **config)
-                    elif VisualisationType.AREA == viz_type:
-                        content_type = ContentType.AREA
-                        dialogue.area_chart(df, **config)
-                    elif VisualisationType.SCATTER == viz_type:
-                        content_type = ContentType.SCATTER
-                        dialogue.scatter_chart(df, **config)
-                    elif VisualisationType.BAR == viz_type:
-                        content_type = ContentType.BAR
-                        dialogue.bar_chart(df, **config)
-                    elif VisualisationType.TABLE == viz_type:
-                        content_type = ContentType.TABLE
-                        dialogue.table(df, **config)
-                    else:
-                        content_type = ContentType.TABLE
-                        dialogue.dataframe(df, **config)
-
-                    elements.append(
-                        Element(
-                            content_type=content_type,
-                            content={
-                                "config": config,
-                                "desc": desc,
-                                "func_name": call.name,
-                                "arguments": call.arguments,
-                            },
-                            model=model,
-                        )
-                    )
+                elements.append(e)
             return elements
         except Exception as e:
             logger.info(e)
