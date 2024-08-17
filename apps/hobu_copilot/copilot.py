@@ -210,7 +210,7 @@ class Copilot:
                     )
         except Exception as e:
             logger.error(e)
-            st.error(
+            st.toast(
                 "Failed to understand your preferences. Will try again in the next attempt"
             )
         # Post-process assistant response
@@ -227,7 +227,6 @@ class Copilot:
             st.session_state.user = UserState()
 
         Renderer.render_chat_history()
-
         query = st.chat_input("Ask away ...")
         if query:
             self.handler(query)
